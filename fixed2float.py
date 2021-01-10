@@ -3,6 +3,7 @@ import argparse
 import math
 import struct
 
+# This is needed to allow argparse to automatically parse hex ints from user input
 def autobase_int(x):
     return int(x, 0)
 
@@ -17,34 +18,12 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 def main(argv):
+    # Strip out the script name before parsing the arguments
     arg_vals = parse_args(argv[1:])
+    # Grab the fixed point parameters
     given = arg_vals.number
     num_bits=arg_vals.bits
     num_frac=arg_vals.frac
-    struct_format='I'
-    if num_bits == 8:
-        if arg_vals.signed:
-            struct_format='b'
-        else:
-            struct_format='B'
-    elif num_bits == 16:
-        if arg_vals.signed:
-            struct_format='h'
-        else:
-            struct_format='H'
-    elif num_bits == 32:
-        if arg_vals.signed:
-            struct_format='i'
-        else:
-            struct_format='I'
-    elif num_bits == 64:
-        if arg_vals.signed:
-            struct_format='l'
-        else:
-            struct_format='L'
-    else:
-        print("Invalid bit length")
-        sys.exit(1)
 
     print(f'Given Val: {given:#0{num_bits//4+2}x}')
     print(f'Given Val(dec): {given:d}')
