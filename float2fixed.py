@@ -16,10 +16,14 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 def main(argv):
+    # Strip out hte program name
     arg_vals = parse_args(argv[1:])
+    # Grab the fixed point parameters
     given = arg_vals.number
     num_bits=arg_vals.bits
     num_frac=arg_vals.frac
+
+    # Figure out how to pack the bits (stupid python)
     struct_format='I'
     if num_bits == 8:
         if arg_vals.signed:
@@ -46,31 +50,40 @@ def main(argv):
         sys.exit(1)
 
     if arg_vals.show_range:
+        # Work out the bit pattern for the min value if signed or unsigned
         minval= struct.pack(struct_format,
                             0 if not arg_vals.signed else int.from_bytes((b'\x80' + (b'\x00'*(num_bits//8-1))),
                                                                         byteorder='big', signed=True))
+        # work out the bit pattern for the max value
         maxval= struct.pack(struct_format,
                             int.from_bytes(b'\xff'*(num_bits//8), byteorder='big', signed=False) if not arg_vals.signed
                             else int.from_bytes(b'\x7f' + (b'\xff'*((num_bits//8)-1)), byteorder='big', signed=True))
+        # Figure out what those are if floating point format
         minval=struct.unpack(struct_format, minval)[0]
         maxval=struct.unpack(struct_format, maxval)[0]
         minval = minval/(2**num_frac)
         maxval = maxval/(2**num_frac)
+        # Show the representation range
         print(f'Representation range: [{minval:f}, {maxval:f}]')
 
     if arg_vals.show_precision:
+        # precision is +/- the decimal value of the LSb
         print(f'Precision: +/- {1/(2**num_frac):f}')
 
+    # the struct library freaks out if the number is too big for the given format, we use this to detect overflow
     try:
         fxdpt = struct.pack(struct_format, int(given * 2**num_frac))
     except:
         print(f"Error: {given:f} causes overflow with given fixed point parameters")
         sys.exit(2)
 
+    # Print our findings
     print(f'Given Val: {given:f}')
+    # use the upper() call here to make it into an unsiged format to display the 2s complement bit pattern
     print(f'Fixed point: {struct.unpack(struct_format.upper(),fxdpt)[0]:#0{num_bits//4 + 2:d}x}')
     actualFloat=struct.unpack(struct_format, fxdpt)[0]/(2**num_frac)
     print(f'Actual Val: {actualFloat:f}')
+    # Make sure we don't div by 0
     if given != 0:
         print(f'Representation Error: {(actualFloat - given)/given:%}')
     else:
